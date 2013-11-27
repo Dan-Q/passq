@@ -1,0 +1,12 @@
+%p
+  Log in:
+
+%form#login-form{:action => '#', :method => 'post'}
+  %p.field
+    %label{:for => 'username'} Username:
+    %input{:id => 'username', :type => 'text'}
+  %p.field
+    %label{:for => 'password'} Password:
+    %input{:id => 'password', :type => 'password'}
+  %p.actions
+    %input{:id => 'submit', :type => 'submit', :value => 'Create account'}

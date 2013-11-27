@@ -1,0 +1,13 @@
+!!! 5
+%html.no-js{:lang => 'en'}
+  %head
+    %meta{:charset => 'utf-8'}
+    %title PassQ
+    %link{:rel => 'stylesheet', :href => 'stylesheets/passq.css'}
+    %script{:src => 'javascripts/jquery.min.js'}
+    %script{:src => 'javascripts/sha3.js'}
+    %script{:src => 'javascripts/aes.js'}
+    %script{:src => 'javascripts/passq.js'}
+  %body
+    #main
+      = yield
