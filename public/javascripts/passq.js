@@ -1,3 +1,33 @@
+var PassQ = PassQ || {
+  init: function(username, password){
+    this.account_key = CryptoJS.SHA3(username + ':' + password, { outputLength: 512 }).toString();
+    this.crypto_key = CryptoJS.SHA3(password, { outputLength: 512 }).toString();
+    return(this);
+  },
+
+  decrypt_password_safe: function(){
+    this.decrypted_password_safe = $.parseJSON(CryptoJS.AES.decrypt(this.encrypted_password_safe, this.crypto_key).toString(CryptoJS.enc.Utf8));
+    return(this);
+  },
+
+  encrypt_password_safe: function(){
+    this.encrypted_password_safe = CryptoJS.AES.encrypt(JSON.stringify(this.decrypted_password_safe).toString(CryptoJS.enc.Base64), this.crypto_key).toString();
+    return(this);
+  },
+
+  save: function(){
+    this.encrypt_password_safe();
+    $.post('/save', { account_key: this.account_key, encrypted_password_safe: this.encrypted_password_safe }, function(data, text_status, xhr){
+      if(data == 'OK'){
+        alert('Saved okay.')
+      } else {
+        alert(data);
+      }
+    }, 'text');
+    return(this);
+  }
+};
+
 (function(){
   $(function(){
     // Setup form
@@ -13,10 +43,16 @@
         alert('The two passwords did not match.');
         return;
       }
-      var account_key = CryptoJS.SHA3(username + ':' + password1, { outputLength: 512 }).toString();
-      var crypto_key = CryptoJS.SHA3(password1, { outputLength: 512 }).toString();
-      var empty_password_safe = CryptoJS.AES.encrypt('[]'.toString(CryptoJS.enc.Base64), crypto_key).toString();
-      $.post('/setup', { account_key: account_key, empty_password_safe: empty_password_safe }, null, 'script');
+      PassQ.init(username, password1).decrypted_password_safe = { passwords: [] };
+      PassQ.encrypt_password_safe();
+      $.post('/setup', { account_key: PassQ.account_key, empty_password_safe: PassQ.encrypted_password_safe }, function(data, text_status, xhr){
+        if(data == 'OK') {
+          alert('Registration successful. Log in.')
+          window.location.href = '/'; // reload the page, now planning to see the login page
+        } else {
+          alert(data); // show the error message returned by the server
+        }
+      }, 'text');
     });
 
     // Login form
@@ -28,14 +64,16 @@
         alert('You must specify a username and password.');
         return;
       }
-      var account_key = CryptoJS.SHA3(username + ':' + password, { outputLength: 512 }).toString();
-      var crypto_key = CryptoJS.SHA3(password, { outputLength: 512 }).toString();
-      $.post('/login', { account_key: account_key }, function(data, text_status, xhr){
+      PassQ.init(username, password);
+      $.post('/login', { account_key: PassQ.account_key }, function(data, text_status, xhr){
         if(data == ''){
-          alert('auth failed');
+          alert('Authentication failed.');
         }else{
-          var t = CryptoJS.AES.decrypt(data, crypto_key).toString(CryptoJS.enc.Utf8);
-          alert(t);
+          $('body').html('Decrypting passwords...');
+          PassQ.encrypted_password_safe = data;
+          PassQ.decrypt_password_safe();
+          // clear page and load app content
+          $('body').html('').load('/app');
         }
       }, 'text');
     });
